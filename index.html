@@ -36,7 +36,7 @@
 
     .app-container {
       width: 100%;
-      max-width: 1020px;
+      max-width: 1060px;
       background: #fdfdfd;
       border-radius: 20px;
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
@@ -47,7 +47,7 @@
       align-items: center;
     }
 
-    @media (max-width: 840px) {
+    @media (max-width: 860px) {
       .app-container {
         grid-template-columns: 1fr;
         padding: 20px 14px;
@@ -55,7 +55,6 @@
       }
     }
 
-    /* 标题区域 */
     .header-area {
       grid-column: 1 / -1;
       text-align: center;
@@ -160,7 +159,6 @@
       gap: 16px;
     }
 
-    /* 轮盘预设管理卡片 */
     .preset-box {
       background: #fff8f8;
       border: 1.5px solid #fed7d7;
@@ -214,6 +212,90 @@
       font-weight: 500;
     }
 
+    /* 配色选板模块 */
+    .theme-select-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .color-palette-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      background: #f8fafc;
+      border: 1.5px dashed var(--border-color);
+      padding: 8px 12px;
+      border-radius: 10px;
+    }
+
+    .color-chip {
+      position: relative;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s;
+    }
+
+    .color-chip:hover {
+      transform: scale(1.1);
+    }
+
+    .color-chip-del {
+      display: none;
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 14px;
+      height: 14px;
+      background: #e53e3e;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 10px;
+      line-height: 14px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .color-chip:hover .color-chip-del {
+      display: block;
+    }
+
+    .add-color-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px dashed #a0aec0;
+      background: #fff;
+      color: #718096;
+      font-size: 16px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .add-color-btn input[type="color"] {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      width: 50px;
+      height: 50px;
+      opacity: 0;
+      cursor: pointer;
+    }
+
     .range-wrap {
       display: flex;
       align-items: center;
@@ -228,7 +310,7 @@
 
     textarea {
       width: 100%;
-      height: 70px;
+      height: 64px;
       border: 1.5px solid var(--border-color);
       border-radius: 10px;
       padding: 8px 10px;
@@ -299,7 +381,7 @@
     }
 
     .tags-container {
-      max-height: 120px;
+      max-height: 110px;
       overflow-y: auto;
       display: flex;
       flex-wrap: wrap;
@@ -382,7 +464,7 @@
   <div class="app-container">
     <div class="header-area">
       <h1>🎯 多功能幸运大转盘</h1>
-      <p>文字从外边缘向中心竖向排列・支持多套轮盘方案切换保存</p>
+      <p>多方案切换</p>
     </div>
 
     <!-- 转盘显示区 -->
@@ -411,6 +493,27 @@
         <div style="display: flex; gap: 6px; margin-top: 8px;">
           <button class="btn-secondary" style="flex:1" onclick="renameCurrentPreset()">✏️ 重命名</button>
           <button class="btn-danger" style="flex:1" onclick="deleteCurrentPreset()">🗑️ 删除当前</button>
+        </div>
+      </div>
+
+      <!-- 配色方案调节 -->
+      <div>
+        <div class="panel-item-header">
+          <span>轮盘颜色与多色划分</span>
+          <span class="badge" id="colorCountBadge">2 色交替</span>
+        </div>
+        <div class="theme-select-row">
+          <select id="themeTemplateSelect" onchange="applyColorTheme(this.value)">
+            <option value="classic">🎨 主题：经典暖红金 (2色)</option>
+            <option value="macaron">🍬 主题：甜美马卡龙 (4色)</option>
+            <option value="cyber">⚡ 主题：赛博霓虹 (3色)</option>
+            <option value="mint">🍃 主题：薄荷森林 (3色)</option>
+            <option value="sunset">🌅 主题：温暖落日 (4色)</option>
+            <option value="rainbow">🌈 主题：缤纷六彩 (6色)</option>
+          </select>
+        </div>
+        <div class="color-palette-bar" id="paletteChipsBar">
+          <!-- 动态渲染颜色小球 -->
         </div>
       </div>
 
@@ -467,8 +570,18 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'MULTI_WHEEL_STORAGE_V2';
+    const STORAGE_KEY = 'MULTI_WHEEL_STORAGE_V3';
     const MAX_ITEMS = 40;
+
+    // 内置精选色系
+    const COLOR_THEMES = {
+      classic: ['#ffffff', '#ffeac4'],
+      macaron: ['#ffb3ba', '#bae1ff', '#baffc9', '#ffffba'],
+      cyber: ['#ff007f', '#00f0ff', '#ffe600'],
+      mint: ['#e3fdfd', '#cbf1f5', '#a6e3e9'],
+      sunset: ['#ffeedb', '#ffc7a2', '#f69d7a', '#e06d53'],
+      rainbow: ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#bdb2ff']
+    };
 
     const DEFAULT_DATA = {
       activeId: 'preset_num',
@@ -477,12 +590,14 @@
           id: 'preset_num',
           name: '幸运数字 (1~10)',
           duration: 4,
+          colors: ['#ffffff', '#ffeac4'],
           prizes: ['1号', '2号', '3号', '4号', '5号', '6号', '7号', '8号', '9号', '10号']
         },
         {
           id: 'preset_letter',
           name: '英文字母 (A~H)',
           duration: 4,
+          colors: ['#ffb3ba', '#bae1ff', '#baffc9', '#ffffba'],
           prizes: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
         }
       ]
@@ -504,6 +619,9 @@
       if (!p) {
         p = appData.presets[0];
         appData.activeId = p.id;
+      }
+      if (!p.colors || !Array.isArray(p.colors) || p.colors.length < 2) {
+        p.colors = ['#ffffff', '#ffeac4'];
       }
       return p;
     }
@@ -560,6 +678,7 @@
         id: newId,
         name: name.trim(),
         duration: 4,
+        colors: ['#ffffff', '#ffeac4', '#fff5df'],
         prizes: ['选项 1', '选项 2', '选项 3', '选项 4']
       });
       appData.activeId = newId;
@@ -596,16 +715,92 @@
       }
     }
 
+    // 应用预设颜色模板
+    function applyColorTheme(themeKey) {
+      if (isRotating) return;
+      const themeColors = COLOR_THEMES[themeKey];
+      if (themeColors) {
+        const current = getActivePreset();
+        current.colors = [...themeColors];
+        saveStorage();
+        renderAll();
+      }
+    }
+
+    // 渲染颜色条目
+    function renderPalette() {
+      const current = getActivePreset();
+      const bar = document.getElementById('paletteChipsBar');
+      bar.innerHTML = '';
+
+      current.colors.forEach((color, idx) => {
+        const chip = document.createElement('div');
+        chip.className = 'color-chip';
+        chip.style.backgroundColor = color;
+        chip.title = `颜色 ${idx + 1}: ${color} (点击移除)`;
+        chip.innerHTML = `<span class="color-chip-del">&times;</span>`;
+        chip.onclick = () => removeColor(idx);
+        bar.appendChild(chip);
+      });
+
+      // 添加颜色按钮（内置原生 Color 拾色器）
+      const addBtn = document.createElement('div');
+      addBtn.className = 'add-color-btn';
+      addBtn.title = '添加自定义颜色';
+      addBtn.innerHTML = `+<input type="color" onchange="addColor(this.value)">`;
+      bar.appendChild(addBtn);
+
+      document.getElementById('colorCountBadge').innerText = `${current.colors.length} 色轮盘`;
+    }
+
+    function addColor(hex) {
+      if (isRotating) return;
+      const current = getActivePreset();
+      if (current.colors.length >= 8) {
+        alert('最多支持自定义 8 种轮盘颜色');
+        return;
+      }
+      current.colors.push(hex);
+      saveStorage();
+      renderAll();
+    }
+
+    function removeColor(idx) {
+      if (isRotating) return;
+      const current = getActivePreset();
+      if (current.colors.length <= 2) {
+        alert('转盘最少需要保留 2 种颜色');
+        return;
+      }
+      current.colors.splice(idx, 1);
+      saveStorage();
+      renderAll();
+    }
+
+    // 智能选取字体色，浅底深字，深底浅字
+    function getContrastColor(hexColor) {
+      let hex = hexColor.replace('#', '');
+      if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+      }
+      const r = parseInt(hex.substring(0, 2), 16) || 0;
+      const g = parseInt(hex.substring(2, 4), 16) || 0;
+      const b = parseInt(hex.substring(4, 6), 16) || 0;
+      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+      return (yiq >= 140) ? '#a2291e' : '#ffffff';
+    }
+
     function renderAll() {
       const current = getActivePreset();
       document.getElementById('durationInput').value = current.duration;
       document.getElementById('durationVal').innerText = `${current.duration} 秒`;
       document.getElementById('prizeCountBadge').innerText = `当前 ${current.prizes.length} 项 (每项 ${(360 / current.prizes.length).toFixed(1)}°)`;
+      renderPalette();
       renderWheel();
       renderTags();
     }
 
-    // 核心绘制：文字从外边缘竖着朝向圆心逐字排列
+    // 核心绘制：多色循环搭配竖排文字
     function renderWheel() {
       const canvas = document.getElementById('wheelCanvas');
       if (!canvas) return;
@@ -623,7 +818,9 @@
       const radius = center - outerBorder;
       const current = getActivePreset();
       const prizes = current.prizes;
+      const colors = current.colors;
       const len = prizes.length;
+      const colorLen = colors.length;
       const arc = (2 * Math.PI) / len;
 
       ctx.clearRect(0, 0, size, size);
@@ -634,21 +831,19 @@
       ctx.fillStyle = '#e03b2c';
       ctx.fill();
 
-      // 配色方案（奇数三色防撞）
-      const colors = (len % 2 === 0) 
-        ? ['#ffffff', '#ffeac4'] 
-        : ['#ffffff', '#ffeac4', '#fff5df'];
-
       // 计算扇区顶端宽度以约束字号
       const arcWidth = radius * 0.8 * arc;
       let fontSize = Math.max(9, Math.min(15, Math.floor(arcWidth * 0.85)));
       if (len > 30) fontSize = 9;
 
       for (let i = 0; i < len; i++) {
-        let colorIdx = i % colors.length;
-        if (len % 2 !== 0 && i === len - 1 && colorIdx === 0) {
-          colorIdx = 2;
+        let colorIdx = i % colorLen;
+        // 首尾撞色防范：如果最后一项算出的颜色和第0项相同，往后挪一个颜色
+        if (i === len - 1 && colorIdx === 0 && len > 1) {
+          colorIdx = (colorIdx + 1) % colorLen;
         }
+
+        const fillColor = colors[colorIdx];
 
         // 扇区几何绘制
         const startAngle = i * arc - Math.PI / 2;
@@ -657,28 +852,27 @@
         ctx.beginPath();
         ctx.moveTo(center, center);
         ctx.arc(center, center, radius, startAngle, endAngle);
-        ctx.fillStyle = colors[colorIdx];
+        ctx.fillStyle = fillColor;
         ctx.fill();
-        ctx.strokeStyle = '#f8d7da';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
         ctx.lineWidth = 1;
         ctx.stroke();
 
         // 旋转坐标系到正中央中轴线
         ctx.save();
         ctx.translate(center, center);
-        // 让 y 轴正方向对准扇区中心线
         ctx.rotate(startAngle + arc / 2 + Math.PI / 2);
 
-        ctx.fillStyle = '#b33939';
+        // 根据背景亮度自适应文字颜色
+        ctx.fillStyle = getContrastColor(fillColor);
         ctx.font = `bold ${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // 竖排核心算法：
-        // 外边缘起始半径为 radius * 0.88，文字逐个朝圆心（y 坐标递减）书写
+        // 竖排算法：从外向中心排列
         const startR = radius * 0.88;
-        const innerMinR = radius * 0.32; // 不进入中心按钮遮挡区
-        const step = fontSize + Math.max(2, fontSize * 0.2); // 每个字符的垂直步长
+        const innerMinR = radius * 0.32;
+        const step = fontSize + Math.max(2, fontSize * 0.2);
 
         const text = prizes[i];
         const chars = Array.from(text);
@@ -686,11 +880,9 @@
         for (let c = 0; c < chars.length; c++) {
           const currentR = startR - c * step;
           if (currentR < innerMinR) {
-            // 如果字数过多排不下，最后一个显示为省略号
             ctx.fillText('…', 0, -currentR);
             break;
           }
-          // 在 y 轴负方向（即从外往圆心）逐字绘制
           ctx.fillText(chars[c], 0, -currentR);
         }
 
@@ -817,7 +1009,6 @@
       const sectorAngle = 360 / total;
       const rounds = 6;
 
-      // 目标扇区中心严丝合缝停在顶部指针位置
       const targetDegree = rounds * 360 + (360 - (targetIndex * sectorAngle + sectorAngle / 2));
       const finalDegree = Math.ceil(currentDeg / 360) * 360 + targetDegree;
       currentDeg = finalDegree;
