@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>好吃鬼大转盘</title>
+  <title>多功能幸运大转盘</title>
   <style>
     :root {
       --primary-color: #f75344;
@@ -381,8 +381,8 @@
 
   <div class="app-container">
     <div class="header-area">
-      <h1>🎯 好吃鬼大转盘</h1>
-      <p>支持多套转盘切换保存</p>
+      <h1>🎯 多功能幸运大转盘</h1>
+      <p>文字从外边缘向中心竖向排列・支持多套轮盘方案切换保存</p>
     </div>
 
     <!-- 转盘显示区 -->
@@ -460,17 +460,16 @@
   <div id="resultModal" class="modal-overlay" onclick="closeModal()">
     <div class="modal-card" onclick="event.stopPropagation()">
       <div class="modal-emoji">🎉</div>
-      <div class="modal-title">好吃鬼抽到了</div>
+      <div class="modal-title">抽签结果</div>
       <div id="modalPrizeName" class="modal-result">奖项名称</div>
       <button class="btn-primary" style="width: 100%; padding: 10px;" onclick="closeModal()">我知道了</button>
     </div>
   </div>
 
   <script>
-    const STORAGE_KEY = 'MULTI_WHEEL_STORAGE_V1';
+    const STORAGE_KEY = 'MULTI_WHEEL_STORAGE_V2';
     const MAX_ITEMS = 40;
 
-    // 默认自带两个示例轮盘：数字与字母
     const DEFAULT_DATA = {
       activeId: 'preset_num',
       presets: [
@@ -484,7 +483,7 @@
           id: 'preset_letter',
           name: '英文字母 (A~H)',
           duration: 4,
-          prizes: ['选项 A', '选项 B', '选项 C', '选项 D', '选项 E', '选项 F', '选项 G', '选项 H']
+          prizes: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
         }
       ]
     };
@@ -531,7 +530,6 @@
       }
     }
 
-    // 渲染下拉框选项
     function renderPresetSelect() {
       const select = document.getElementById('wheelPresetSelect');
       select.innerHTML = '';
@@ -545,7 +543,6 @@
       document.getElementById('presetCountBadge').innerText = `共 ${appData.presets.length} 个`;
     }
 
-    // 切换轮盘
     function onSwitchPreset(id) {
       if (isRotating) return;
       appData.activeId = id;
@@ -553,7 +550,6 @@
       renderAll();
     }
 
-    // 新建轮盘
     function createNewPreset() {
       if (isRotating) return;
       const name = prompt('请输入新轮盘名称：', `我的轮盘 ${appData.presets.length + 1}`);
@@ -573,7 +569,6 @@
       renderAll();
     }
 
-    // 重命名当前轮盘
     function renameCurrentPreset() {
       if (isRotating) return;
       const current = getActivePreset();
@@ -585,7 +580,6 @@
       renderPresetSelect();
     }
 
-    // 删除当前轮盘
     function deleteCurrentPreset() {
       if (isRotating) return;
       if (appData.presets.length <= 1) {
@@ -611,7 +605,7 @@
       renderTags();
     }
 
-    // 核心绘制：文字从外边缘向中心排列
+    // 核心绘制：文字从外边缘竖着朝向圆心逐字排列
     function renderWheel() {
       const canvas = document.getElementById('wheelCanvas');
       if (!canvas) return;
@@ -645,9 +639,9 @@
         ? ['#ffffff', '#ffeac4'] 
         : ['#ffffff', '#ffeac4', '#fff5df'];
 
-      // 计算文字宽度和字号限制
-      const availableWidth = radius * 0.75 * arc;
-      let fontSize = Math.max(9, Math.min(15, Math.floor(availableWidth * 0.8)));
+      // 计算扇区顶端宽度以约束字号
+      const arcWidth = radius * 0.8 * arc;
+      let fontSize = Math.max(9, Math.min(15, Math.floor(arcWidth * 0.85)));
       if (len > 30) fontSize = 9;
 
       for (let i = 0; i < len; i++) {
@@ -669,32 +663,36 @@
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // 绘制文字：从外边缘向中心排列
+        // 旋转坐标系到正中央中轴线
         ctx.save();
         ctx.translate(center, center);
-        ctx.rotate(startAngle + arc / 2);
+        // 让 y 轴正方向对准扇区中心线
+        ctx.rotate(startAngle + arc / 2 + Math.PI / 2);
 
         ctx.fillStyle = '#b33939';
         ctx.font = `bold ${fontSize}px sans-serif`;
-        // textAlign = 'left' 配合外边缘起点，实现文字外向内排布
-        ctx.textAlign = 'left';
+        ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // 起点设在外圆弧内侧（留 12px 边缘空隙），向圆心方向延伸
-        const startX = radius - 14;
-        const maxTextWidth = radius * 0.54; // 到中心按钮的安全范围
+        // 竖排核心算法：
+        // 外边缘起始半径为 radius * 0.88，文字逐个朝圆心（y 坐标递减）书写
+        const startR = radius * 0.88;
+        const innerMinR = radius * 0.32; // 不进入中心按钮遮挡区
+        const step = fontSize + Math.max(2, fontSize * 0.2); // 每个字符的垂直步长
 
-        let text = prizes[i];
-        while (ctx.measureText(text).width > maxTextWidth && text.length > 1) {
-          text = text.slice(0, -1);
-        }
-        if (text !== prizes[i]) {
-          text = text.slice(0, -1) + '…';
-        }
+        const text = prizes[i];
+        const chars = Array.from(text);
 
-        // 翻转坐标系：使文字头朝外、尾朝圆心正向可读
-        ctx.rotate(Math.PI);
-        ctx.fillText(text, -startX, 0);
+        for (let c = 0; c < chars.length; c++) {
+          const currentR = startR - c * step;
+          if (currentR < innerMinR) {
+            // 如果字数过多排不下，最后一个显示为省略号
+            ctx.fillText('…', 0, -currentR);
+            break;
+          }
+          // 在 y 轴负方向（即从外往圆心）逐字绘制
+          ctx.fillText(chars[c], 0, -currentR);
+        }
 
         ctx.restore();
       }
