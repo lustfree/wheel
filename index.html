@@ -14,6 +14,7 @@
       --text-muted: #718096;
       --card-bg: #ffffff;
       --border-color: #e2e8f0;
+      --success-color: #38a169;
     }
 
     * {
@@ -36,7 +37,7 @@
 
     .app-container {
       width: 100%;
-      max-width: 1060px;
+      max-width: 1080px;
       background: #fdfdfd;
       border-radius: 20px;
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
@@ -96,7 +97,6 @@
       transition: transform cubic-bezier(0.25, 0.1, 0.25, 1);
     }
 
-    /* 中心指针与操作按钮 */
     .wheel-pointer {
       position: absolute;
       width: 22%;
@@ -212,10 +212,10 @@
       font-weight: 500;
     }
 
-    /* 配色选板模块 */
+    /* 调色板相关 */
     .theme-select-row {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
       margin-bottom: 8px;
     }
@@ -229,6 +229,7 @@
       border: 1.5px dashed var(--border-color);
       padding: 8px 12px;
       border-radius: 10px;
+      min-height: 48px;
     }
 
     .color-chip {
@@ -246,7 +247,7 @@
     }
 
     .color-chip:hover {
-      transform: scale(1.1);
+      transform: scale(1.15);
     }
 
     .color-chip-del {
@@ -276,7 +277,7 @@
       border: 2px dashed #a0aec0;
       background: #fff;
       color: #718096;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: bold;
       display: flex;
       align-items: center;
@@ -294,6 +295,51 @@
       height: 50px;
       opacity: 0;
       cursor: pointer;
+    }
+
+    /* 常用 48 颜色选择库 */
+    .color-library-box {
+      margin-top: 10px;
+      background: #fafafa;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .color-lib-title {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 5px;
+    }
+
+    @media (max-width: 500px) {
+      .color-grid {
+        grid-template-columns: repeat(8, 1fr);
+      }
+    }
+
+    .color-lib-item {
+      width: 100%;
+      padding-bottom: 100%;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      position: relative;
+      transition: transform 0.1s, box-shadow 0.1s;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .color-lib-item:hover {
+      transform: scale(1.25);
+      z-index: 5;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.25);
     }
 
     .range-wrap {
@@ -365,6 +411,14 @@
       color: #e53e3e;
       border: 1px solid #feb2b2;
     }
+    .btn-success {
+      background: #38a169;
+      color: #fff;
+      font-weight: bold;
+    }
+    .btn-success:hover {
+      background: #2f855a;
+    }
 
     .single-input-row {
       display: flex;
@@ -410,7 +464,26 @@
       line-height: 1;
     }
 
-    /* 弹窗 Modal */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(30, 41, 59, 0.95);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 200;
+      pointer-events: none;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* 结果弹窗 Modal */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -464,7 +537,7 @@
   <div class="app-container">
     <div class="header-area">
       <h1>🎯 多功能幸运大转盘</h1>
-      <p>多方案切换</p>
+      <p>自定义主题</p>
     </div>
 
     <!-- 转盘显示区 -->
@@ -493,27 +566,28 @@
         <div style="display: flex; gap: 6px; margin-top: 8px;">
           <button class="btn-secondary" style="flex:1" onclick="renameCurrentPreset()">✏️ 重命名</button>
           <button class="btn-danger" style="flex:1" onclick="deleteCurrentPreset()">🗑️ 删除当前</button>
+          <button class="btn-success" style="flex:1.2" onclick="saveCurrentConfigExplicitly()">💾 保存配置</button>
         </div>
       </div>
 
-      <!-- 配色方案调节 -->
+      <!-- 配色方案配置 -->
       <div>
         <div class="panel-item-header">
-          <span>轮盘颜色与多色划分</span>
-          <span class="badge" id="colorCountBadge">2 色交替</span>
+          <span>轮盘颜色与主题方案</span>
+          <span class="badge" id="colorCountBadge">2 色轮盘</span>
         </div>
         <div class="theme-select-row">
-          <select id="themeTemplateSelect" onchange="applyColorTheme(this.value)">
-            <option value="classic">🎨 主题：经典暖红金 (2色)</option>
-            <option value="macaron">🍬 主题：甜美马卡龙 (4色)</option>
-            <option value="cyber">⚡ 主题：赛博霓虹 (3色)</option>
-            <option value="mint">🍃 主题：薄荷森林 (3色)</option>
-            <option value="sunset">🌅 主题：温暖落日 (4色)</option>
-            <option value="rainbow">🌈 主题：缤纷六彩 (6色)</option>
-          </select>
+          <select id="themeTemplateSelect" onchange="applyColorTheme(this.value)"></select>
+          <button class="btn-secondary" onclick="saveCurrentColorsAsNewTheme()">另存为新主题</button>
         </div>
-        <div class="color-palette-bar" id="paletteChipsBar">
-          <!-- 动态渲染颜色小球 -->
+
+        <!-- 调色板选中的颜色小球 -->
+        <div class="color-palette-bar" id="paletteChipsBar"></div>
+
+        <!-- 48 常用高频颜色点选库 -->
+        <div class="color-library-box">
+          <div class="color-lib-title">快速选择常用色（点击添加，支持多达48种常见高频色）：</div>
+          <div class="color-grid" id="colorLibraryGrid"></div>
         </div>
       </div>
 
@@ -534,7 +608,7 @@
           <span>快捷批量录入</span>
           <span class="badge">空格或换行隔开 (最多40项)</span>
         </div>
-        <textarea id="batchInput" placeholder="输入多个选项，用空格或换行隔开：&#10;例如抽数字：1 2 3 4 5 6 7 8 9 10&#10;例如抽字母：A B C D E F G"></textarea>
+        <textarea id="batchInput" placeholder="输入多个选项，用空格或换行隔开：&#10;例如：张三 李四 王五 赵六 钱七 孙八"></textarea>
         <div class="btn-group">
           <button class="btn-primary" onclick="batchImport('append')">追加添加</button>
           <button class="btn-accent" onclick="batchImport('replace')">覆盖全部</button>
@@ -559,6 +633,9 @@
     </div>
   </div>
 
+  <!-- 提示 Toast -->
+  <div id="toastBox" class="toast">已成功保存</div>
+
   <!-- 结果弹窗 -->
   <div id="resultModal" class="modal-overlay" onclick="closeModal()">
     <div class="modal-card" onclick="event.stopPropagation()">
@@ -570,18 +647,35 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'MULTI_WHEEL_STORAGE_V3';
+    const STORAGE_KEY = 'MULTI_WHEEL_STORAGE_V4';
+    const THEMES_KEY = 'CUSTOM_COLOR_THEMES_V1';
     const MAX_ITEMS = 40;
 
-    // 内置精选色系
-    const COLOR_THEMES = {
-      classic: ['#ffffff', '#ffeac4'],
-      macaron: ['#ffb3ba', '#bae1ff', '#baffc9', '#ffffba'],
-      cyber: ['#ff007f', '#00f0ff', '#ffe600'],
-      mint: ['#e3fdfd', '#cbf1f5', '#a6e3e9'],
-      sunset: ['#ffeedb', '#ffc7a2', '#f69d7a', '#e06d53'],
-      rainbow: ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#bdb2ff']
-    };
+    // 精选 48 种流行高频颜色库
+    const POPULAR_48_COLORS = [
+      // 红色与粉色系
+      '#ff4d4f', '#ff7875', '#f5222d', '#cf1322', '#eb2f96', '#ff85c0', '#f759ab', '#c41d7f',
+      // 橙色与黄色系
+      '#fa8c16', '#ffa940', '#fa541c', '#d4380d', '#fadb14', '#ffec3d', '#ffd13b', '#d4b106',
+      // 绿色与薄荷系
+      '#52c41a', '#73d13d', '#389e0d', '#237804', '#13c2c2', '#36cfc9', '#08979c', '#006d75',
+      // 蓝系与青色系
+      '#1890ff', '#40a9ff', '#096dd9', '#003a8c', '#2f54eb', '#597ef7', '#1d39c4', '#10239e',
+      // 紫色系
+      '#722ed1', '#9254de', '#531dab', '#391085', '#b37feb', '#d3adf7', '#efdbff', '#f9f0ff',
+      // 柔和马卡龙、大地、黑白暖灰
+      '#ffeac4', '#ffeedb', '#fff5df', '#d9f7be', '#b5f5ec', '#bae7ff', '#ffffff', '#262626'
+    ];
+
+    // 默认内置主题集
+    const DEFAULT_THEMES = [
+      { id: 'theme_classic', name: '经典暖红金 (2色)', colors: ['#ffffff', '#ffeac4'] },
+      { id: 'theme_macaron', name: '甜美马卡龙 (4色)', colors: ['#ffb3ba', '#bae1ff', '#baffc9', '#ffffba'] },
+      { id: 'theme_cyber', name: '赛博霓虹 (3色)', colors: ['#ff007f', '#00f0ff', '#ffe600'] },
+      { id: 'theme_mint', name: '薄荷清新 (3色)', colors: ['#e3fdfd', '#cbf1f5', '#a6e3e9'] },
+      { id: 'theme_sunset', name: '温暖落日 (4色)', colors: ['#ffeedb', '#ffc7a2', '#f69d7a', '#e06d53'] },
+      { id: 'theme_rainbow', name: '六彩缤纷 (6色)', colors: ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#bdb2ff'] }
+    ];
 
     const DEFAULT_DATA = {
       activeId: 'preset_num',
@@ -590,6 +684,7 @@
           id: 'preset_num',
           name: '幸运数字 (1~10)',
           duration: 4,
+          themeId: 'theme_classic',
           colors: ['#ffffff', '#ffeac4'],
           prizes: ['1号', '2号', '3号', '4号', '5号', '6号', '7号', '8号', '9号', '10号']
         },
@@ -597,22 +692,33 @@
           id: 'preset_letter',
           name: '英文字母 (A~H)',
           duration: 4,
+          themeId: 'theme_macaron',
           colors: ['#ffb3ba', '#bae1ff', '#baffc9', '#ffffba'],
           prizes: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
         }
       ]
     };
 
+    let colorThemes = [];
     let appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
     let currentDeg = 0;
     let isRotating = false;
 
     window.addEventListener('DOMContentLoaded', () => {
       loadStorage();
+      renderColorLibrary();
+      renderThemeSelect();
       renderPresetSelect();
       renderAll();
       window.addEventListener('resize', renderWheel);
     });
+
+    function showToast(text) {
+      const box = document.getElementById('toastBox');
+      box.innerText = text;
+      box.classList.add('show');
+      setTimeout(() => box.classList.remove('show'), 1600);
+    }
 
     function getActivePreset() {
       let p = appData.presets.find(item => item.id === appData.activeId);
@@ -635,19 +741,73 @@
             appData = parsed;
           }
         }
+        const storedThemes = localStorage.getItem(THEMES_KEY);
+        if (storedThemes) {
+          colorThemes = JSON.parse(storedThemes);
+        } else {
+          colorThemes = JSON.parse(JSON.stringify(DEFAULT_THEMES));
+        }
       } catch (e) {
         console.error('加载本地存储失败', e);
+        colorThemes = JSON.parse(JSON.stringify(DEFAULT_THEMES));
       }
     }
 
     function saveStorage() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        localStorage.setItem(THEMES_KEY, JSON.stringify(colorThemes));
       } catch (e) {
         console.error('保存本地存储失败', e);
       }
     }
 
+    function saveCurrentConfigExplicitly() {
+      saveStorage();
+      showToast('💾 轮盘与配色已保存成功！');
+    }
+
+    // 渲染常用 48 颜色库
+    function renderColorLibrary() {
+      const grid = document.getElementById('colorLibraryGrid');
+      grid.innerHTML = '';
+      POPULAR_48_COLORS.forEach(hex => {
+        const item = document.createElement('div');
+        item.className = 'color-lib-item';
+        item.style.backgroundColor = hex;
+        item.title = `点击添加: ${hex}`;
+        item.onclick = () => addColorToPreset(hex);
+        grid.appendChild(item);
+      });
+    }
+
+    // 渲染主题下拉框
+    function renderThemeSelect() {
+      const select = document.getElementById('themeTemplateSelect');
+      select.innerHTML = '<option value="" disabled>-- 切换或选择主题 --</option>';
+
+      const current = getActivePreset();
+      colorThemes.forEach(th => {
+        const opt = document.createElement('option');
+        opt.value = th.id;
+        opt.innerText = `🎨 ${th.name}`;
+        if (current.themeId === th.id) {
+          opt.selected = true;
+        }
+        select.appendChild(opt);
+      });
+
+      // 如果当前是自定义调色，增加“自定义独立色板”选项
+      if (!current.themeId || !colorThemes.some(t => t.id === current.themeId)) {
+        const customOpt = document.createElement('option');
+        customOpt.value = 'custom_active';
+        customOpt.innerText = '✨ 当前为自定义色板';
+        customOpt.selected = true;
+        select.appendChild(customOpt);
+      }
+    }
+
+    // 渲染轮盘方案下拉框
     function renderPresetSelect() {
       const select = document.getElementById('wheelPresetSelect');
       select.innerHTML = '';
@@ -661,13 +821,18 @@
       document.getElementById('presetCountBadge').innerText = `共 ${appData.presets.length} 个`;
     }
 
+    // 切换轮盘
     function onSwitchPreset(id) {
       if (isRotating) return;
       appData.activeId = id;
       saveStorage();
+      renderPresetSelect();
+      renderThemeSelect();
       renderAll();
+      showToast('已切换至目标轮盘');
     }
 
+    // 新建轮盘
     function createNewPreset() {
       if (isRotating) return;
       const name = prompt('请输入新轮盘名称：', `我的轮盘 ${appData.presets.length + 1}`);
@@ -678,14 +843,17 @@
         id: newId,
         name: name.trim(),
         duration: 4,
-        colors: ['#ffffff', '#ffeac4', '#fff5df'],
+        themeId: 'theme_classic',
+        colors: ['#ffffff', '#ffeac4'],
         prizes: ['选项 1', '选项 2', '选项 3', '选项 4']
       });
       appData.activeId = newId;
 
       saveStorage();
       renderPresetSelect();
+      renderThemeSelect();
       renderAll();
+      showToast('新建成功');
     }
 
     function renameCurrentPreset() {
@@ -711,23 +879,49 @@
         appData.activeId = appData.presets[0].id;
         saveStorage();
         renderPresetSelect();
+        renderThemeSelect();
         renderAll();
+        showToast('已删除');
       }
     }
 
-    // 应用预设颜色模板
-    function applyColorTheme(themeKey) {
+    // 选中并应用现有主题
+    function applyColorTheme(themeId) {
       if (isRotating) return;
-      const themeColors = COLOR_THEMES[themeKey];
-      if (themeColors) {
-        const current = getActivePreset();
-        current.colors = [...themeColors];
-        saveStorage();
-        renderAll();
-      }
+      const targetTheme = colorThemes.find(t => t.id === themeId);
+      if (!targetTheme) return;
+
+      const current = getActivePreset();
+      current.themeId = targetTheme.id;
+      current.colors = [...targetTheme.colors];
+
+      saveStorage();
+      renderThemeSelect();
+      renderAll();
+      showToast(`已应用主题：${targetTheme.name}`);
     }
 
-    // 渲染颜色条目
+    // 将当前颜色条目另存为新主题
+    function saveCurrentColorsAsNewTheme() {
+      if (isRotating) return;
+      const current = getActivePreset();
+      const themeName = prompt('给新主题起个名字：', `个性配色 (${current.colors.length}色)`);
+      if (!themeName || !themeName.trim()) return;
+
+      const newThemeId = 'custom_th_' + Date.now();
+      colorThemes.push({
+        id: newThemeId,
+        name: themeName.trim(),
+        colors: [...current.colors]
+      });
+
+      current.themeId = newThemeId;
+      saveStorage();
+      renderThemeSelect();
+      showToast('新主题收藏成功！');
+    }
+
+    // 渲染当前方案选中的颜色球
     function renderPalette() {
       const current = getActivePreset();
       const bar = document.getElementById('paletteChipsBar');
@@ -743,25 +937,27 @@
         bar.appendChild(chip);
       });
 
-      // 添加颜色按钮（内置原生 Color 拾色器）
+      // 原生 RGB / HEX 自定义拾色器
       const addBtn = document.createElement('div');
       addBtn.className = 'add-color-btn';
-      addBtn.title = '添加自定义颜色';
-      addBtn.innerHTML = `+<input type="color" onchange="addColor(this.value)">`;
+      addBtn.title = '调出系统 RGB/HEX 拾色器';
+      addBtn.innerHTML = `🎨<input type="color" onchange="addColorToPreset(this.value)">`;
       bar.appendChild(addBtn);
 
       document.getElementById('colorCountBadge').innerText = `${current.colors.length} 色轮盘`;
     }
 
-    function addColor(hex) {
+    function addColorToPreset(hex) {
       if (isRotating) return;
       const current = getActivePreset();
-      if (current.colors.length >= 8) {
-        alert('最多支持自定义 8 种轮盘颜色');
+      if (current.colors.length >= 12) {
+        alert('最多支持配置 12 种轮盘颜色');
         return;
       }
       current.colors.push(hex);
+      current.themeId = 'custom_active';
       saveStorage();
+      renderThemeSelect();
       renderAll();
     }
 
@@ -773,11 +969,13 @@
         return;
       }
       current.colors.splice(idx, 1);
+      current.themeId = 'custom_active';
       saveStorage();
+      renderThemeSelect();
       renderAll();
     }
 
-    // 智能选取字体色，浅底深字，深底浅字
+    // 自动判断背景明暗，选择可读性最佳的文字颜色
     function getContrastColor(hexColor) {
       let hex = hexColor.replace('#', '');
       if (hex.length === 3) {
@@ -786,8 +984,8 @@
       const r = parseInt(hex.substring(0, 2), 16) || 0;
       const g = parseInt(hex.substring(2, 4), 16) || 0;
       const b = parseInt(hex.substring(4, 6), 16) || 0;
-      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-      return (yiq >= 140) ? '#a2291e' : '#ffffff';
+      const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+      return (brightness >= 145) ? '#a2291e' : '#ffffff';
     }
 
     function renderAll() {
@@ -800,7 +998,7 @@
       renderTags();
     }
 
-    // 核心绘制：多色循环搭配竖排文字
+    // 核心绘制：文字从外向中心逐字垂直排列
     function renderWheel() {
       const canvas = document.getElementById('wheelCanvas');
       if (!canvas) return;
@@ -831,21 +1029,18 @@
       ctx.fillStyle = '#e03b2c';
       ctx.fill();
 
-      // 计算扇区顶端宽度以约束字号
       const arcWidth = radius * 0.8 * arc;
       let fontSize = Math.max(9, Math.min(15, Math.floor(arcWidth * 0.85)));
       if (len > 30) fontSize = 9;
 
       for (let i = 0; i < len; i++) {
         let colorIdx = i % colorLen;
-        // 首尾撞色防范：如果最后一项算出的颜色和第0项相同，往后挪一个颜色
+        // 首尾撞色纠偏
         if (i === len - 1 && colorIdx === 0 && len > 1) {
           colorIdx = (colorIdx + 1) % colorLen;
         }
 
         const fillColor = colors[colorIdx];
-
-        // 扇区几何绘制
         const startAngle = i * arc - Math.PI / 2;
         const endAngle = startAngle + arc;
 
@@ -858,18 +1053,17 @@
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // 旋转坐标系到正中央中轴线
+        // 旋转坐标系到扇区中心
         ctx.save();
         ctx.translate(center, center);
         ctx.rotate(startAngle + arc / 2 + Math.PI / 2);
 
-        // 根据背景亮度自适应文字颜色
         ctx.fillStyle = getContrastColor(fillColor);
         ctx.font = `bold ${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // 竖排算法：从外向中心排列
+        // 竖排算法：从外向中心
         const startR = radius * 0.88;
         const innerMinR = radius * 0.32;
         const step = fontSize + Math.max(2, fontSize * 0.2);
