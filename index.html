@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>好吃鬼大转盘</title>
+  <title>多功能幸运大转盘</title>
   <style>
     :root {
       --primary-color: #f75344;
@@ -36,22 +36,22 @@
 
     .app-container {
       width: 100%;
-      max-width: 1000px;
+      max-width: 1020px;
       background: #fdfdfd;
       border-radius: 20px;
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
       padding: 24px 18px;
       display: grid;
-      grid-template-columns: 1fr 1.1fr;
+      grid-template-columns: 1fr 1.15fr;
       gap: 28px;
       align-items: center;
     }
 
-    @media (max-width: 820px) {
+    @media (max-width: 840px) {
       .app-container {
         grid-template-columns: 1fr;
         padding: 20px 14px;
-        gap: 24px;
+        gap: 20px;
       }
     }
 
@@ -89,7 +89,6 @@
       align-items: center;
     }
 
-    /* Canvas 高清自适应转盘 */
     #wheelCanvas {
       width: 100%;
       height: 100%;
@@ -161,6 +160,41 @@
       gap: 16px;
     }
 
+    /* 轮盘预设管理卡片 */
+    .preset-box {
+      background: #fff8f8;
+      border: 1.5px solid #fed7d7;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .preset-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #c53030;
+    }
+
+    .preset-select-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    select {
+      flex: 1;
+      padding: 7px 10px;
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-main);
+      background-color: #fff;
+      outline: none;
+      cursor: pointer;
+    }
+
     .panel-item-header {
       display: flex;
       justify-content: space-between;
@@ -194,7 +228,7 @@
 
     textarea {
       width: 100%;
-      height: 74px;
+      height: 70px;
       border: 1.5px solid var(--border-color);
       border-radius: 10px;
       padding: 8px 10px;
@@ -205,7 +239,7 @@
       transition: border-color 0.2s;
     }
 
-    textarea:focus, input[type="text"]:focus {
+    textarea:focus, input[type="text"]:focus, select:focus {
       border-color: var(--primary-color);
     }
 
@@ -244,6 +278,11 @@
       background: #edf2f7;
       color: #4a5568;
     }
+    .btn-danger {
+      background: #fff5f5;
+      color: #e53e3e;
+      border: 1px solid #feb2b2;
+    }
 
     .single-input-row {
       display: flex;
@@ -259,7 +298,6 @@
       outline: none;
     }
 
-    /* 标签列表 */
     .tags-container {
       max-height: 120px;
       overflow-y: auto;
@@ -343,8 +381,8 @@
 
   <div class="app-container">
     <div class="header-area">
-      <h1>🎯 好吃鬼大转盘</h1>
-      <p>移动端文字防重叠优化版，自动缩放排版</p>
+      <h1>🎯 多功能幸运大转盘</h1>
+      <p>支持多套转盘切换保存・文字自外向内排列</p>
     </div>
 
     <!-- 转盘显示区 -->
@@ -360,6 +398,22 @@
 
     <!-- 选项配置区 -->
     <div class="control-panel">
+      <!-- 轮盘库管理 -->
+      <div class="preset-box">
+        <div class="preset-header">
+          <span>📁 我的转盘方案</span>
+          <span class="badge" id="presetCountBadge">共 2 个</span>
+        </div>
+        <div class="preset-select-row">
+          <select id="wheelPresetSelect" onchange="onSwitchPreset(this.value)"></select>
+          <button class="btn-primary" onclick="createNewPreset()">+ 新建</button>
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 8px;">
+          <button class="btn-secondary" style="flex:1" onclick="renameCurrentPreset()">✏️ 重命名</button>
+          <button class="btn-danger" style="flex:1" onclick="deleteCurrentPreset()">🗑️ 删除当前</button>
+        </div>
+      </div>
+
       <!-- 旋转时长控制 -->
       <div>
         <div class="panel-item-header">
@@ -377,11 +431,11 @@
           <span>快捷批量录入</span>
           <span class="badge">空格或换行隔开 (最多40项)</span>
         </div>
-        <textarea id="batchInput" placeholder="在此直接粘贴或输入选项：&#10;张三 李四 王五 赵六 钱七 孙八 周九"></textarea>
+        <textarea id="batchInput" placeholder="输入多个选项，用空格或换行隔开：&#10;例如抽数字：1 2 3 4 5 6 7 8 9 10&#10;例如抽字母：A B C D E F G"></textarea>
         <div class="btn-group">
           <button class="btn-primary" onclick="batchImport('append')">追加添加</button>
           <button class="btn-accent" onclick="batchImport('replace')">覆盖全部</button>
-          <button class="btn-secondary" onclick="resetPrizes()">清空重置</button>
+          <button class="btn-secondary" onclick="resetCurrentPrizes()">清空重置</button>
         </div>
       </div>
 
@@ -406,64 +460,158 @@
   <div id="resultModal" class="modal-overlay" onclick="closeModal()">
     <div class="modal-card" onclick="event.stopPropagation()">
       <div class="modal-emoji">🎉</div>
-      <div class="modal-title">好吃鬼抽到了</div>
+      <div class="modal-title">抽签结果</div>
       <div id="modalPrizeName" class="modal-result">奖项名称</div>
       <button class="btn-primary" style="width: 100%; padding: 10px;" onclick="closeModal()">我知道了</button>
     </div>
   </div>
 
   <script>
-    const STORAGE_KEY_PRIZES = 'WHEEL_WEB_PRIZES_V2';
-    const STORAGE_KEY_DURATION = 'WHEEL_WEB_DURATION_V2';
+    const STORAGE_KEY = 'MULTI_WHEEL_STORAGE_V1';
     const MAX_ITEMS = 40;
 
-    let prizes = ['张三', '李四', '王五', '赵六'];
-    let duration = 4;
+    // 默认自带两个示例轮盘：数字与字母
+    const DEFAULT_DATA = {
+      activeId: 'preset_num',
+      presets: [
+        {
+          id: 'preset_num',
+          name: '幸运数字 (1~10)',
+          duration: 4,
+          prizes: ['1号', '2号', '3号', '4号', '5号', '6号', '7号', '8号', '9号', '10号']
+        },
+        {
+          id: 'preset_letter',
+          name: '英文字母 (A~H)',
+          duration: 4,
+          prizes: ['选项 A', '选项 B', '选项 C', '选项 D', '选项 E', '选项 F', '选项 G', '选项 H']
+        }
+      ]
+    };
+
+    let appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
     let currentDeg = 0;
     let isRotating = false;
 
     window.addEventListener('DOMContentLoaded', () => {
-      loadFromStorage();
+      loadStorage();
+      renderPresetSelect();
       renderAll();
       window.addEventListener('resize', renderWheel);
     });
 
-    function loadFromStorage() {
+    function getActivePreset() {
+      let p = appData.presets.find(item => item.id === appData.activeId);
+      if (!p) {
+        p = appData.presets[0];
+        appData.activeId = p.id;
+      }
+      return p;
+    }
+
+    function loadStorage() {
       try {
-        const storedPrizes = localStorage.getItem(STORAGE_KEY_PRIZES);
-        const storedDuration = localStorage.getItem(STORAGE_KEY_DURATION);
-        if (storedPrizes) {
-          const parsed = JSON.parse(storedPrizes);
-          if (Array.isArray(parsed) && parsed.length >= 2) {
-            prizes = parsed.slice(0, MAX_ITEMS);
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && Array.isArray(parsed.presets) && parsed.presets.length > 0) {
+            appData = parsed;
           }
         }
-        if (storedDuration) {
-          duration = parseFloat(storedDuration) || 4;
-          document.getElementById('durationInput').value = duration;
-          document.getElementById('durationVal').innerText = `${duration} 秒`;
-        }
       } catch (e) {
-        console.error(e);
+        console.error('加载本地存储失败', e);
       }
     }
 
-    function saveToStorage() {
+    function saveStorage() {
       try {
-        localStorage.setItem(STORAGE_KEY_PRIZES, JSON.stringify(prizes));
-        localStorage.setItem(STORAGE_KEY_DURATION, duration.toString());
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
       } catch (e) {
-        console.error(e);
+        console.error('保存本地存储失败', e);
+      }
+    }
+
+    // 渲染下拉框选项
+    function renderPresetSelect() {
+      const select = document.getElementById('wheelPresetSelect');
+      select.innerHTML = '';
+      appData.presets.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.innerText = p.name;
+        if (p.id === appData.activeId) opt.selected = true;
+        select.appendChild(opt);
+      });
+      document.getElementById('presetCountBadge').innerText = `共 ${appData.presets.length} 个`;
+    }
+
+    // 切换轮盘
+    function onSwitchPreset(id) {
+      if (isRotating) return;
+      appData.activeId = id;
+      saveStorage();
+      renderAll();
+    }
+
+    // 新建轮盘
+    function createNewPreset() {
+      if (isRotating) return;
+      const name = prompt('请输入新轮盘名称：', `我的轮盘 ${appData.presets.length + 1}`);
+      if (!name || !name.trim()) return;
+
+      const newId = 'preset_' + Date.now();
+      appData.presets.push({
+        id: newId,
+        name: name.trim(),
+        duration: 4,
+        prizes: ['选项 1', '选项 2', '选项 3', '选项 4']
+      });
+      appData.activeId = newId;
+
+      saveStorage();
+      renderPresetSelect();
+      renderAll();
+    }
+
+    // 重命名当前轮盘
+    function renameCurrentPreset() {
+      if (isRotating) return;
+      const current = getActivePreset();
+      const newName = prompt('修改当前轮盘名称：', current.name);
+      if (!newName || !newName.trim()) return;
+
+      current.name = newName.trim();
+      saveStorage();
+      renderPresetSelect();
+    }
+
+    // 删除当前轮盘
+    function deleteCurrentPreset() {
+      if (isRotating) return;
+      if (appData.presets.length <= 1) {
+        alert('至少保留一个轮盘方案');
+        return;
+      }
+      const current = getActivePreset();
+      if (confirm(`确定要删除轮盘【${current.name}】吗？`)) {
+        appData.presets = appData.presets.filter(p => p.id !== current.id);
+        appData.activeId = appData.presets[0].id;
+        saveStorage();
+        renderPresetSelect();
+        renderAll();
       }
     }
 
     function renderAll() {
+      const current = getActivePreset();
+      document.getElementById('durationInput').value = current.duration;
+      document.getElementById('durationVal').innerText = `${current.duration} 秒`;
+      document.getElementById('prizeCountBadge').innerText = `当前 ${current.prizes.length} 项 (每项 ${(360 / current.prizes.length).toFixed(1)}°)`;
       renderWheel();
       renderTags();
-      document.getElementById('prizeCountBadge').innerText = `当前 ${prizes.length} 项 (每项 ${(360 / prizes.length).toFixed(1)}°)`;
     }
 
-    // Canvas 绘制核心逻辑：按弧度绝对均匀排布，文本自动测量与缩放
+    // 核心绘制：文字从外边缘向中心排列
     function renderWheel() {
       const canvas = document.getElementById('wheelCanvas');
       if (!canvas) return;
@@ -479,6 +627,8 @@
       const center = size / 2;
       const outerBorder = 6;
       const radius = center - outerBorder;
+      const current = getActivePreset();
+      const prizes = current.prizes;
       const len = prizes.length;
       const arc = (2 * Math.PI) / len;
 
@@ -490,15 +640,14 @@
       ctx.fillStyle = '#e03b2c';
       ctx.fill();
 
-      // 配色方案（奇偶互斥）
+      // 配色方案（奇数三色防撞）
       const colors = (len % 2 === 0) 
         ? ['#ffffff', '#ffeac4'] 
         : ['#ffffff', '#ffeac4', '#fff5df'];
 
-      // 动态计算文字大小，确保文字绝不超出扇形两翼
-      // 扇区中段弧长 = radius * 0.65 * arc
-      const availableWidth = radius * 0.68 * arc;
-      let fontSize = Math.max(9, Math.min(16, Math.floor(availableWidth * 0.85)));
+      // 计算文字宽度和字号限制
+      const availableWidth = radius * 0.75 * arc;
+      let fontSize = Math.max(9, Math.min(15, Math.floor(availableWidth * 0.8)));
       if (len > 30) fontSize = 9;
 
       for (let i = 0; i < len; i++) {
@@ -507,8 +656,7 @@
           colorIdx = 2;
         }
 
-        // 绘制扇形
-        // 注意：HTML Canvas 0弧度在正右方，顺时针偏置 -PI/2 使第0项正对正上方
+        // 扇区几何绘制
         const startAngle = i * arc - Math.PI / 2;
         const endAngle = startAngle + arc;
 
@@ -521,21 +669,22 @@
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // 绘制文字：旋转坐标轴到扇区正中间
+        // 绘制文字：从外边缘向中心排列
         ctx.save();
         ctx.translate(center, center);
         ctx.rotate(startAngle + arc / 2);
 
         ctx.fillStyle = '#b33939';
         ctx.font = `bold ${fontSize}px sans-serif`;
-        ctx.textAlign = 'right';
+        // textAlign = 'left' 配合外边缘起点，实现文字外向内排布
+        ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
 
-        // 文本最大可用长度（从半径 88% 处到中心按钮边缘）
-        const maxTextWidth = radius * 0.55;
+        // 起点设在外圆弧内侧（留 12px 边缘空隙），向圆心方向延伸
+        const startX = radius - 14;
+        const maxTextWidth = radius * 0.54; // 到中心按钮的安全范围
+
         let text = prizes[i];
-        
-        // 超长文本自动截断加省略号，彻底杜绝重叠
         while (ctx.measureText(text).width > maxTextWidth && text.length > 1) {
           text = text.slice(0, -1);
         }
@@ -543,15 +692,19 @@
           text = text.slice(0, -1) + '…';
         }
 
-        ctx.fillText(text, radius * 0.88, 0);
+        // 翻转坐标系：使文字头朝外、尾朝圆心正向可读
+        ctx.rotate(Math.PI);
+        ctx.fillText(text, -startX, 0);
+
         ctx.restore();
       }
     }
 
     function renderTags() {
+      const current = getActivePreset();
       const container = document.getElementById('tagsContainer');
       container.innerHTML = '';
-      prizes.forEach((item, index) => {
+      current.prizes.forEach((item, index) => {
         const tag = document.createElement('div');
         tag.className = 'tag';
         tag.innerHTML = `<span>${index + 1}. ${escapeHtml(item)}</span><span class="tag-del" onclick="deletePrize(${index})">&times;</span>`;
@@ -566,9 +719,10 @@
     }
 
     function onDurationChange(val) {
-      duration = parseFloat(val);
-      document.getElementById('durationVal').innerText = `${duration} 秒`;
-      saveToStorage();
+      const current = getActivePreset();
+      current.duration = parseFloat(val);
+      document.getElementById('durationVal').innerText = `${current.duration} 秒`;
+      saveStorage();
     }
 
     function parseBatch(text) {
@@ -579,6 +733,7 @@
 
     function batchImport(type) {
       if (isRotating) return;
+      const current = getActivePreset();
       const input = document.getElementById('batchInput');
       const items = parseBatch(input.value);
 
@@ -588,58 +743,61 @@
       }
 
       if (type === 'append') {
-        let merged = [...prizes, ...items];
+        let merged = [...current.prizes, ...items];
         if (merged.length > MAX_ITEMS) {
-          alert(`转盘最多支持 ${MAX_ITEMS} 项，超出部分已截取`);
+          alert(`转盘最多支持 ${MAX_ITEMS} 项，超出部分已截断`);
           merged = merged.slice(0, MAX_ITEMS);
         }
-        prizes = merged;
+        current.prizes = merged;
       } else {
         if (items.length < 2) {
           alert('覆盖时至少需要输入2个选项');
           return;
         }
-        prizes = items.slice(0, MAX_ITEMS);
+        current.prizes = items.slice(0, MAX_ITEMS);
       }
 
       input.value = '';
-      saveToStorage();
+      saveStorage();
       renderAll();
     }
 
     function addSinglePrize() {
       if (isRotating) return;
+      const current = getActivePreset();
       const input = document.getElementById('singleInput');
       const val = input.value.trim();
       if (!val) return;
 
-      if (prizes.length >= MAX_ITEMS) {
+      if (current.prizes.length >= MAX_ITEMS) {
         alert(`最多支持添加 ${MAX_ITEMS} 个选项`);
         return;
       }
 
-      prizes.push(val);
+      current.prizes.push(val);
       input.value = '';
-      saveToStorage();
+      saveStorage();
       renderAll();
     }
 
     function deletePrize(idx) {
       if (isRotating) return;
-      if (prizes.length <= 2) {
+      const current = getActivePreset();
+      if (current.prizes.length <= 2) {
         alert('最少保留 2 个选项');
         return;
       }
-      prizes.splice(idx, 1);
-      saveToStorage();
+      current.prizes.splice(idx, 1);
+      saveStorage();
       renderAll();
     }
 
-    function resetPrizes() {
+    function resetCurrentPrizes() {
       if (isRotating) return;
-      if (confirm('确认清空所有选项并恢复默认吗？')) {
-        prizes = ['选项A', '选项B'];
-        saveToStorage();
+      if (confirm('确认清空当前轮盘的选项吗？')) {
+        const current = getActivePreset();
+        current.prizes = ['选项A', '选项B'];
+        saveStorage();
         renderAll();
       }
     }
@@ -648,6 +806,7 @@
       if (isRotating) return;
       isRotating = true;
 
+      const current = getActivePreset();
       const pointer = document.getElementById('wheelPointer');
       const btnText = document.getElementById('pointerBtnText');
       const canvas = document.getElementById('wheelCanvas');
@@ -655,17 +814,17 @@
       pointer.classList.add('disabled');
       btnText.innerText = '抽奖中';
 
-      const total = prizes.length;
+      const total = current.prizes.length;
       const targetIndex = Math.floor(Math.random() * total);
       const sectorAngle = 360 / total;
       const rounds = 6;
 
-      // 目标扇区中心严丝合缝停在正上方指针处
+      // 目标扇区中心严丝合缝停在顶部指针位置
       const targetDegree = rounds * 360 + (360 - (targetIndex * sectorAngle + sectorAngle / 2));
       const finalDegree = Math.ceil(currentDeg / 360) * 360 + targetDegree;
       currentDeg = finalDegree;
 
-      canvas.style.transitionDuration = `${duration}s`;
+      canvas.style.transitionDuration = `${current.duration}s`;
       canvas.style.transform = `rotate(${finalDegree}deg)`;
 
       setTimeout(() => {
@@ -673,8 +832,8 @@
         pointer.classList.remove('disabled');
         btnText.innerHTML = '开始<br>抽奖';
 
-        showResultModal(prizes[targetIndex]);
-      }, duration * 1000 + 200);
+        showResultModal(current.prizes[targetIndex]);
+      }, current.duration * 1000 + 200);
     }
 
     function showResultModal(name) {
