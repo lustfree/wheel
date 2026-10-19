@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>幸运大转盘 - 自定义抽奖神器</title>
+  <style>
+    :root {
+      --primary-color: #f75344;
+      --primary-hover: #e03b2c;
+      --accent-color: #ffd13b;
+      --accent-hover: #f5c426;
+      --text-main: #2d3748;
+      --text-muted: #718096;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+      color: var(--text-main);
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1080px;
+      background: #fdfdfd;
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      padding: 36px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    @media (max-width: 860px) {
+      .app-container {
+        grid-template-columns: 1fr;
+        padding: 24px 18px;
+        gap: 32px;
+      }
+    }
+
+    /* 标题区域 */
+    .header-area {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: -10px;
+    }
+    .header-area h1 {
+      font-size: 28px;
+      color: #d63031;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+    .header-area p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* 转盘区域 */
+    .wheel-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wheel-wrapper {
+      position: relative;
+      width: 380px;
+      height: 380px;
+    }
+
+    @media (max-width: 440px) {
+      .wheel-wrapper {
+        width: 300px;
+        height: 300px;
+      }
+    }
+
+    .wheel-plate {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 12px solid #e03b2c;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+      transition: transform cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+
+    .wheel-item {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform-origin: 50% 50%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      box-sizing: border-box;
+      pointer-events: none;
+    }
+
+    .prize-text {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-weight: 700;
+      color: #b33939;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 中心指针与按钮 */
+    .wheel-pointer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 90px;
+      height: 90px;
+      margin-top: -45px;
+      margin-left: -45px;
+      background: var(--accent-color);
+      border-radius: 50%;
+      border: 5px solid #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      user-select: none;
+      z-index: 10;
+      transition: transform 0.15s, background-color 0.15s;
+    }
+
+    .wheel-pointer:hover {
+      background: var(--accent-hover);
+      transform: scale(1.05);
+    }
+
+    .wheel-pointer:active {
+      transform: scale(0.96);
+    }
+
+    .wheel-pointer.disabled {
+      cursor: not-allowed;
+      filter: grayscale(0.5);
+      opacity: 0.85;
+      transform: scale(1) !important;
+    }
+
+    .pointer-arrow {
+      position: absolute;
+      top: -22px;
+      left: 50%;
+      margin-left: -14px;
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 26px solid var(--accent-color);
+      transition: border-bottom-color 0.15s;
+    }
+
+    .wheel-pointer:hover .pointer-arrow {
+      border-bottom-color: var(--accent-hover);
+    }
+
+    .pointer-text {
+      font-size: 16px;
+      font-weight: 800;
+      color: #831f18;
+      text-align: center;
+      line-height: 1.15;
+    }
+
+    /* 控制面板区域 */
+    .control-panel {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #4a5568;
+    }
+
+    .badge {
+      background: #edf2f7;
+      color: #4a5568;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    .range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--primary-color);
+      cursor: pointer;
+    }
+
+    textarea {
+      width: 100%;
+      height: 86px;
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--text-main);
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus, input[type="text"]:focus {
+      border-color: var(--primary-color);
+    }
+
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button {
+      border: none;
+      outline: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, background-color 0.2s;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--primary-color);
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    .btn-accent {
+      background: var(--accent-color);
+      color: #831f18;
+    }
+    .btn-accent:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: #edf2f7;
+      color: #4a5568;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #e2e8f0;
+    }
+
+    .single-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    /* 标签列表 */
+    .tags-container {
+      max-height: 130px;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px 2px;
+    }
+
+    .tag {
+      background: #fff5f5;
+      border: 1px solid #fed7d7;
+      color: #c53030;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tag-del {
+      font-weight: 700;
+      cursor: pointer;
+      color: #e53e3e;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .tag-del:hover {
+      color: #9b2c2c;
+    }
+
+    /* 弹窗 Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(4px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 32px 28px;
+      text-align: center;
+      width: 90%;
+      max-width: 360px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-emoji {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .modal-result {
+      font-size: 26px;
+      font-weight: 800;
+      color: #d63031;
+      margin-bottom: 24px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <div class="header-area">
+      <h1>🎯 好吃鬼大转盘</h1>
+      <p>支持快速粘贴、自动均分、自定义速度与历史配置记忆</p>
+    </div>
+
+    <!-- 转盘显示区 -->
+    <div class="wheel-section">
+      <div class="wheel-wrapper">
+        <div id="wheelPlate" class="wheel-plate"></div>
+        <div id="wheelPointer" class="wheel-pointer" onclick="startLottery()">
+          <div class="pointer-arrow"></div>
+          <div id="pointerBtnText" class="pointer-text">开始<br>抽奖</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 选项配置区 -->
+    <div class="control-panel">
+      <!-- 旋转时长控制 -->
+      <div>
+        <div class="panel-item-header">
+          <span>旋转耗时 (速度)</span>
+          <span id="durationVal" class="badge">4 秒</span>
+        </div>
+        <div class="range-wrap">
+          <input type="range" id="durationInput" min="1" max="8" step="0.5" value="4" oninput="onDurationChange(this.value)">
+        </div>
+      </div>
+
+      <!-- 批量录入 -->
+      <div>
+        <div class="panel-item-header">
+          <span>快捷批量录入</span>
+          <span class="badge">空格或换行隔开 (最多40项)</span>
+        </div>
+        <textarea id="batchInput" placeholder="在此直接粘贴或输入选项：&#10;张三 李四 王五 赵六 钱七 孙八 周九"></textarea>
+        <div class="btn-group">
+          <button class="btn-primary" onclick="batchImport('append')">追加添加</button>
+          <button class="btn-accent" onclick="batchImport('replace')">覆盖全部</button>
+          <button class="btn-secondary" onclick="resetPrizes()">清空重置</button>
+        </div>
+      </div>
+
+      <!-- 单项添加 -->
+      <div>
+        <div class="panel-item-header">
+          <span>单项添加</span>
+          <span id="prizeCountBadge" class="badge">当前 4 项</span>
+        </div>
+        <div class="single-input-row">
+          <input type="text" id="singleInput" placeholder="输入选项名称" onkeydown="if(event.key==='Enter') addSinglePrize()">
+          <button class="btn-primary" onclick="addSinglePrize()">添加</button>
+        </div>
+      </div>
+
+      <!-- 选项标签预览 -->
+      <div class="tags-container" id="tagsContainer"></div>
+    </div>
+  </div>
+
+  <!-- 结果模态弹窗 -->
+  <div id="resultModal" class="modal-overlay" onclick="closeModal()">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-emoji">🎉</div>
+      <div class="modal-title">好吃鬼抽到了</div>
+      <div id="modalPrizeName" class="modal-result">奖项名称</div>
+      <button class="btn-primary" style="width: 100%; padding: 10px;" onclick="closeModal()">我知道了</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY_PRIZES = 'WHEEL_WEB_PRIZES';
+    const STORAGE_KEY_DURATION = 'WHEEL_WEB_DURATION';
+    const MAX_ITEMS = 40;
+
+    let prizes = ['张三', '李四', '王五', '赵六'];
+    let duration = 4;
+    let currentDeg = 0;
+    let isRotating = false;
+
+    // 初始化加载
+    window.addEventListener('DOMContentLoaded', () => {
+      loadFromStorage();
+      renderAll();
+    });
+
+    function loadFromStorage() {
+      try {
+        const storedPrizes = localStorage.getItem(STORAGE_KEY_PRIZES);
+        const storedDuration = localStorage.getItem(STORAGE_KEY_DURATION);
+        if (storedPrizes) {
+          const parsed = JSON.parse(storedPrizes);
+          if (Array.isArray(parsed) && parsed.length >= 2) {
+            prizes = parsed.slice(0, MAX_ITEMS);
+          }
+        }
+        if (storedDuration) {
+          duration = parseFloat(storedDuration) || 4;
+          document.getElementById('durationInput').value = duration;
+          document.getElementById('durationVal').innerText = `${duration} 秒`;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY_PRIZES, JSON.stringify(prizes));
+        localStorage.setItem(STORAGE_KEY_DURATION, duration.toString());
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderAll() {
+      renderWheel();
+      renderTags();
+      document.getElementById('prizeCountBadge').innerText = `当前 ${prizes.length} 项 (每项 ${(360 / prizes.length).toFixed(1)}°)`;
+    }
+
+    function renderWheel() {
+      const len = prizes.length;
+      const angle = 360 / len;
+      const plate = document.getElementById('wheelPlate');
+
+      // 动态生成等分背景
+      const colors = (len % 2 === 0) 
+        ? ['#ffffff', '#ffeac4'] 
+        : ['#ffffff', '#ffeac4', '#fff5df'];
+
+      const stops = [];
+      for (let i = 0; i < len; i++) {
+        let colorIdx = i % colors.length;
+        if (len % 2 !== 0 && i === len - 1 && colorIdx === 0) {
+          colorIdx = 2;
+        }
+        const start = (i * angle).toFixed(2);
+        const end = ((i + 1) * angle).toFixed(2);
+        stops.push(`${colors[colorIdx]} ${start}deg ${end}deg`);
+      }
+      plate.style.background = `conic-gradient(${stops.join(', ')})`;
+
+      // 计算文字大小与排版
+      let fontSize = 16;
+      let paddingTop = 24;
+      let maxTextHeight = 110;
+      let letterSpacing = 2;
+
+      if (len > 30) {
+        fontSize = 10;
+        paddingTop = 14;
+        maxTextHeight = 140;
+        letterSpacing = 0;
+      } else if (len > 20) {
+        fontSize = 12;
+        paddingTop = 18;
+        maxTextHeight = 130;
+        letterSpacing = 1;
+      } else if (len > 12) {
+        fontSize = 14;
+        paddingTop = 20;
+        maxTextHeight = 120;
+      }
+
+      // 生成每个奖项文本节点
+      plate.innerHTML = '';
+      prizes.forEach((name, idx) => {
+        const itemDeg = idx * angle + angle / 2;
+        const div = document.createElement('div');
+        div.className = 'wheel-item';
+        div.style.transform = `rotate(${itemDeg}deg)`;
+        div.style.paddingTop = `${paddingTop}px`;
+
+        const span = document.createElement('span');
+        span.className = 'prize-text';
+        span.style.fontSize = `${fontSize}px`;
+        span.style.letterSpacing = `${letterSpacing}px`;
+        span.style.maxHeight = `${maxTextHeight}px`;
+        span.innerText = name;
+
+        div.appendChild(span);
+        plate.appendChild(div);
+      });
+    }
+
+    function renderTags() {
+      const container = document.getElementById('tagsContainer');
+      container.innerHTML = '';
+      prizes.forEach((item, index) => {
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.innerHTML = `<span>${index + 1}. ${escapeHtml(item)}</span><span class="tag-del" onclick="deletePrize(${index})">&times;</span>`;
+        container.appendChild(tag);
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function onDurationChange(val) {
+      duration = parseFloat(val);
+      document.getElementById('durationVal').innerText = `${duration} 秒`;
+      saveToStorage();
+    }
+
+    function parseBatch(text) {
+      const raw = text.trim();
+      if (!raw) return [];
+      return raw.split(/[\s\u3000]+/).filter(Boolean);
+    }
+
+    function batchImport(type) {
+      if (isRotating) return;
+      const input = document.getElementById('batchInput');
+      const items = parseBatch(input.value);
+
+      if (items.length === 0) {
+        alert('请输入有效选项');
+        return;
+      }
+
+      if (type === 'append') {
+        let merged = [...prizes, ...items];
+        if (merged.length > MAX_ITEMS) {
+          alert(`转盘最多支持 ${MAX_ITEMS} 项，超出部分已截断`);
+          merged = merged.slice(0, MAX_ITEMS);
+        }
+        prizes = merged;
+      } else {
+        if (items.length < 2) {
+          alert('覆盖时至少需要输入2个选项');
+          return;
+        }
+        prizes = items.slice(0, MAX_ITEMS);
+      }
+
+      input.value = '';
+      saveToStorage();
+      renderAll();
+    }
+
+    function addSinglePrize() {
+      if (isRotating) return;
+      const input = document.getElementById('singleInput');
+      const val = input.value.trim();
+      if (!val) return;
+
+      if (prizes.length >= MAX_ITEMS) {
+        alert(`最多支持添加 ${MAX_ITEMS} 个选项`);
+        return;
+      }
+
+      prizes.push(val);
+      input.value = '';
+      saveToStorage();
+      renderAll();
+    }
+
+    function deletePrize(idx) {
+      if (isRotating) return;
+      if (prizes.length <= 2) {
+        alert('最少保留 2 个选项');
+        return;
+      }
+      prizes.splice(idx, 1);
+      saveToStorage();
+      renderAll();
+    }
+
+    function resetPrizes() {
+      if (isRotating) return;
+      if (confirm('确认清空所有选项并恢复默认吗？')) {
+        prizes = ['选项A', '选项B'];
+        saveToStorage();
+        renderAll();
+      }
+    }
+
+    function startLottery() {
+      if (isRotating) return;
+      isRotating = true;
+
+      const pointer = document.getElementById('wheelPointer');
+      const btnText = document.getElementById('pointerBtnText');
+      const plate = document.getElementById('wheelPlate');
+
+      pointer.classList.add('disabled');
+      btnText.innerText = '抽奖中';
+
+      const total = prizes.length;
+      const targetIndex = Math.floor(Math.random() * total);
+      const sectorAngle = 360 / total;
+      const rounds = 6;
+
+      // 目标扇区中心对准顶部指针
+      const targetDegree = rounds * 360 + (360 - (targetIndex * sectorAngle + sectorAngle / 2));
+      const finalDegree = Math.ceil(currentDeg / 360) * 360 + targetDegree;
+      currentDeg = finalDegree;
+
+      plate.style.transitionDuration = `${duration}s`;
+      plate.style.transform = `rotate(${finalDegree}deg)`;
+
+      setTimeout(() => {
+        isRotating = false;
+        pointer.classList.remove('disabled');
+        btnText.innerHTML = '开始<br>抽奖';
+
+        showResultModal(prizes[targetIndex]);
+      }, duration * 1000 + 200);
+    }
+
+    function showResultModal(name) {
+      document.getElementById('modalPrizeName').innerText = name;
+      document.getElementById('resultModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('resultModal').classList.remove('active');
+    }
+  </script>
+</body>
+</html>
